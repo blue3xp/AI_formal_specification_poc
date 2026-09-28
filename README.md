@@ -165,6 +165,7 @@ Case: SetScheduledRelease on prod-api-01 (tags env=staging)
 ```
 
 This case perfectly illustrates the value of the formal method:
+
 - **Keyword filter allows**: Because "SetScheduledRelease" does not contain keywords like delete/terminate
 - **Formal guard rejects**: Because the semantic model derives "scheduled release -> release plan -> equivalent deletion"
 
@@ -224,52 +225,19 @@ This is "concrete fact assertion" rather than "symbolic derivation", but the sol
 
 ```typescript
 // SetScheduledRelease -> creates release plan AND release plan deletes instance
-Implies(v.is_action_SetScheduledRelease,
-        And(v.postHasReleasePlan, v.postReleaseDeletes))
+Implies(
+  v.is_action_SetScheduledRelease,
+  And(v.postHasReleasePlan, v.postReleaseDeletes),
+);
 
 // Derived predicate: deletion effect = release deletes OR direct deletion
-v.isDeletionEffect.eq(Or(v.postReleaseDeletes, v.is_action_DeleteInstance))
+v.isDeletionEffect.eq(Or(v.postReleaseDeletes, v.is_action_DeleteInstance));
 
 // Derived predicate: production = env tag is production OR name starts with prod- OR high criticality
-v.isProduction.eq(Or(v.envTagIsProduction, v.nameMatchesProd, v.criticalityIsHigh))
+v.isProduction.eq(
+  Or(v.envTagIsProduction, v.nameMatchesProd, v.criticalityIsHigh),
+);
 ```
-
-## Honest Limitations
-
-### 1. Model Axioms Are Hand-Written
-
-The POC validates that "given a correct model and specs, SMT can produce reliable judgments" — it does not prove the model itself is complete or correct. Model axiom correctness depends on domain expert knowledge.
-
-### 2. Only a Few Actions Covered
-
-Currently only 4 actions are covered:
-
-- `ecs:SetScheduledRelease`
-- `ecs:DeleteInstance`
-- `ecs:DescribeInstances`
-- `oss:PutBucketAcl`
-
-Production use requires large-scale action semantic modeling and coverage governance.
-
-### 3. Fail-Closed Impact
-
-All unmodeled actions are rejected (fail-closed). Practical deployment requires:
-
-- A companion action modeling workflow
-- Model coverage monitoring
-- Exception approval mechanism
-
-### 4. String Predicate Fact Assertion Degradation
-
-`nameMatchesProd` and `envTagIsProduction` are pre-computed in JavaScript and asserted into the solver, rather than fully symbolic string reasoning. This means:
-
-- **Not fully symbolic**: String matching logic is done in JS, Z3 only receives boolean results
-- **Does not affect judgment correctness**: The solver still independently determines "given these facts, is the forbidden condition satisfiable"
-- **Improvement direction**: If z3-solver supports string predicates (like `PrefixOf`), it could be migrated to fully symbolic
-
-### 5. Path Limitation
-
-The z3-solver WASM module cannot work in paths containing non-ASCII characters. This is a known limitation of Emscripten-compiled WASM modules.
 
 ## Dependencies
 
@@ -278,7 +246,3 @@ The z3-solver WASM module cannot work in paths containing non-ASCII characters. 
 - **ai + @ai-sdk/deepseek**: Vercel AI SDK (agent integration, only used by demo-agent.ts)
 - **zod**: Tool input schema validation
 - **dotenv**: Environment variable loading (only used by demo-agent.ts)
-
-## License
-
-ISC
