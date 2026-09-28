@@ -1,0 +1,14 @@
+{
+  "specs": [
+    {
+      "id": "S-0101",
+      "description": "Forbid deletion effects on production resources",
+      "forbid": "isProduction AND isDeletionEffect"
+    },
+    {
+      "id": "S-0208",
+      "description": "Forbid setting a storage bucket to public-read",
+      "forbid": "action == 'oss:PutBucketAcl' AND aclIsPublic"
+    }
+  ]
+}
